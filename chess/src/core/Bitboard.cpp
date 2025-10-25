@@ -7,7 +7,7 @@
 #include "Position.hpp"
 using namespace std;
 
-
+/*
 int main() {
     BitboardInitializer board;
     Bitboardhelper helper;
@@ -26,5 +26,5 @@ cout << "E4 = " << E4 << ", BLACK_PAWN = " << BLACK_PAWN << endl;
     }
     cout<<"Before"<<endl;
     
-}
+}*/
 
