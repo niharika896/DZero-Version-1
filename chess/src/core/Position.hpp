@@ -1,3 +1,5 @@
+#pragma once   // or use traditional include guards
+
 #ifndef BITBOARD_UTILS_HPP
 #define BITBOARD_UTILS_HPP
 

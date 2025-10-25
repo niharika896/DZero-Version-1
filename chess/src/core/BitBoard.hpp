@@ -1,3 +1,5 @@
+#pragma once   // or use traditional include guards
+
 #include <iostream>
 #include <cstdint>
 #include <array>

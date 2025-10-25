@@ -1,3 +1,5 @@
+#pragma once   // or use traditional include guards
+
 #include <iostream>
 #include <cstdint>
 #include <array>
@@ -25,7 +27,7 @@ struct Magic {
     0x402010c110014208, 0xa000a06240114001, 0xa000a06240114001, 0x1002004102008200, 0x1002004102008200, 0x1002004102008200, 0x1002004102008200, 0x1002004102008200,
     0xa000a06240114001, 0x4310002248214800, 0x1002004102008200, 0x1002004102008200, 0x1002004102008200, 0x1002004102008200, 0x1002004102008200, 0x1002004102008200
 };
-
+/*
 const Bitboard rookMagics[64] = {
     0x8200108041020020, 0x8200108041020020, 0xc880221002060081, 0x0009100804021000, 0x0500010004107800, 0x0024010008800a00, 0x0400110410804810, 0x8300038100004222,
     0x004a800182c00020, 0x0009100804021000, 0x3002200010c40021, 0x0020100104000208, 0x01021001a0080020, 0x0884020010082100, 0x1000820800c00060, 0x8020480110020020,
@@ -35,7 +37,28 @@ const Bitboard rookMagics[64] = {
     0x1100400010208000, 0x0009100804021000, 0x0010024871202002, 0x8014001028c80801, 0x1201082010a00200, 0x0002008004102009, 0x8300038100004222, 0x0000401001a00408,
     0x4520920010210200, 0x0400110410804810, 0x8105100028001048, 0x8105100028001048, 0x0802801009083002, 0x8200108041020020, 0x8200108041020020, 0x4000a12400848110,
     0x2000804026001102, 0x2000804026001102, 0x800040a010040901, 0x80001802002c0422, 0x0010b018200c0122, 0x200204802a080401, 0x8880604201100844, 0x80000cc281092402
+};*/
+Bitboard rookMagics[64] = 
+{
+0x0080001020400080, 0x0040001000200040, 0x0080081000200080, 0x0080040800100080,
+0x0080020400080080, 0x0080010200040080, 0x0080008001000200, 0x0080002040800100,
+0x0000800020400080, 0x0000400020005000, 0x0000801000200080, 0x0000800800100080,
+0x0000800400080080, 0x0000800200040080, 0x0000800100020080, 0x0000800040800100,
+
+0x0000208000400080, 0x0000404000201000, 0x0000808010002000, 0x0000808008001000,
+0x0000808004000800, 0x0000808002000400, 0x0000010100020004, 0x0000020000408104,
+0x0000208080004000, 0x0000200040005000, 0x0000100080200080, 0x0000080080100080,
+0x0000040080080080, 0x0000020080040080, 0x0000010080800200, 0x0000800080004100,
+0x0000204000800080, 0x0000200040401000, 0x0000100080802000, 0x0000080080801000,
+0x0000040080800800, 0x0000020080800400, 0x0000020001010004, 0x0000800040800100,
+0x0000204000808000, 0x0000200040008080, 0x0000100020008080, 0x0000080010008080,
+0x0000040008008080, 0x0000020004008080, 0x0000010002008080, 0x0000004081020004,
+0x0000204000800080, 0x0000200040008080, 0x0000100020008080, 0x0000080010008080,
+0x0000040008008080, 0x0000020004008080, 0x0000800100020080, 0x0000800041000080,
+0x00FFFCDDFCED714A, 0x007FFCDDFCED714A, 0x003FFFCDFFD88096, 0x0000040810002101,
+0x0001000204080011, 0x0001000204000801, 0x0001000082000401, 0x0001FFFAABFAD1A2
 };
+
     Bitboard generateBishopMask(int sq)
     {
         int rank = sq / 8;
@@ -43,19 +66,19 @@ const Bitboard rookMagics[64] = {
         Bitboard mask = 0ULL;
         for (int r = rank + 1, f = file + 1; r <= 6 && f <= 6; r++, f++)
         {
-            mask |= 1ULL << r * 8 + f;
+            mask |= 1ULL << (r * 8 + f);
         }
         for (int r = rank + 1, f = file - 1; r <= 6 && f >= 1; r++, f--)
         {
-            mask |= 1ULL << r * 8 + f;
+            mask |= 1ULL << (r * 8 + f);
         }
         for (int r = rank - 1, f = file + 1; r >= 1 && f <= 6; r--, f++)
         {
-            mask |= 1ULL << r * 8 + f;
+            mask |= 1ULL << (r * 8 + f);
         }
         for (int r = rank - 1, f = file - 1; r >= 1 && f >= 1; r--, f--)
         {
-            mask |= 1ULL << r * 8 + f;
+            mask |= 1ULL << (r * 8 + f);
         }
         return mask;
     }
@@ -65,13 +88,13 @@ const Bitboard rookMagics[64] = {
         int file = sq % 8;
         Bitboard mask = 0ULL;
         for (int r = rank + 1; r <= 6; r++)
-            mask |= 1ULL << r * 8 + file;
+            mask |= 1ULL << (r * 8 + file);
         for (int r = rank - 1; r >= 1; r--)
-            mask |= 1ULL << r * 8 + file;
+            mask |= 1ULL << (r * 8 + file);
         for (int f = file + 1; f <= 6; f++)
-            mask |= 1ULL << rank * 8 + f;
+            mask |= 1ULL << (rank * 8 + f);
         for (int f = file - 1; f >= 1; f--)
-            mask |= 1ULL << rank * 8 + f;
+            mask |= 1ULL << (rank * 8 + f);
         return mask;
     }
     vector<Bitboard> generateOccupancyVariations(Bitboard mask)
@@ -109,7 +132,7 @@ const Bitboard rookMagics[64] = {
         // NE direction
         for (int r = rank + 1, f = file + 1; r <= 7 && f <= 7; r++, f++)
         {
-            int s = r * 8 + f;
+            int s = (r * 8 + f);
             attacks |= 1ULL << s;
             if (blockers & (1ULL << s))
                 break; // stop at blocker
@@ -118,7 +141,7 @@ const Bitboard rookMagics[64] = {
         // NW direction
         for (int r = rank + 1, f = file - 1; r <= 7 && f >= 0; r++, f--)
         {
-            int s = r * 8 + f;
+            int s = (r * 8 + f);
             attacks |= 1ULL << s;
             if (blockers & (1ULL << s))
                 break;
@@ -127,7 +150,7 @@ const Bitboard rookMagics[64] = {
         // SE direction
         for (int r = rank - 1, f = file + 1; r >= 0 && f <= 7; r--, f++)
         {
-            int s = r * 8 + f;
+            int s = (r * 8 + f);
             attacks |= 1ULL << s;
             if (blockers & (1ULL << s))
                 break;
@@ -136,7 +159,7 @@ const Bitboard rookMagics[64] = {
         // SW direction
         for (int r = rank - 1, f = file - 1; r >= 0 && f >= 0; r--, f--)
         {
-            int s = r * 8 + f;
+            int s = (r * 8 + f);
             attacks |= 1ULL << s;
             if (blockers & (1ULL << s))
                 break;
@@ -153,7 +176,7 @@ const Bitboard rookMagics[64] = {
         // Up (rank increasing)
         for (int r = rank + 1; r <= 7; r++)
         {
-            int s = r * 8 + file;
+            int s = (r * 8 + file);
             attacks |= 1ULL << s;
             if (blockers & (1ULL << s))
                 break;
@@ -162,7 +185,7 @@ const Bitboard rookMagics[64] = {
         // Down (rank decreasing)
         for (int r = rank - 1; r >= 0; r--)
         {
-            int s = r * 8 + file;
+            int s = (r * 8 + file);
             attacks |= 1ULL << s;
             if (blockers & (1ULL << s))
                 break;
@@ -171,7 +194,7 @@ const Bitboard rookMagics[64] = {
         // Right (file increasing)
         for (int f = file + 1; f <= 7; f++)
         {
-            int s = rank * 8 + f;
+            int s = (rank * 8 + f);
             attacks |= 1ULL << s;
             if (blockers & (1ULL << s))
                 break;
@@ -180,7 +203,7 @@ const Bitboard rookMagics[64] = {
         // Left (file decreasing)
         for (int f = file - 1; f >= 0; f--)
         {
-            int s = rank * 8 + f;
+            int s = (rank * 8 + f);
             attacks |= 1ULL << s;
             if (blockers & (1ULL << s))
                 break;
@@ -201,7 +224,7 @@ void initMagicTables() {
         rookTable[sq].attacks.resize(1 << rookTable[sq].relevantBits);
 
         for (auto occ : occs) {
-            int index = (occ * rookMagics[sq]) >> (64 - rookTable[sq].relevantBits);
+            int index = (int)(((uint64_t)occ * rookTable[sq].magic) >> (64 - rookTable[sq].relevantBits));
             rookTable[sq].attacks[index] = generateRookAttack(sq, occ);
         }
 
@@ -226,7 +249,8 @@ inline Bitboard getBishopAttacks(int sq, Bitboard occ) {
 
 inline Bitboard getRookAttacks(int sq, Bitboard occ) {
     occ &= rookTable[sq].mask;
-    int index = (occ * rookTable[sq].magic) >> (64 - rookTable[sq].relevantBits);
+    int index = (int)(((uint64_t)occ * rookTable[sq].magic) >> (64 - rookTable[sq].relevantBits));
+
     return rookTable[sq].attacks[index];
 }
 void printBitboard(Bitboard bb) {
@@ -241,36 +265,3 @@ void printBitboard(Bitboard bb) {
 }
 
 };
-void printBitboard(Bitboard bb) {
-    cout << "\n    a b c d e f g h\n";
-    cout << "   -----------------\n";
-    for (int rank = 7; rank >= 0; --rank) {
-        cout << rank + 1 << " | ";
-        for (int file = 0; file < 8; ++file) {
-            int sq = rank * 8 + file;
-            cout << ((bb >> sq) & 1ULL ? "● " : ". ");
-        }
-        cout << "|" << endl;
-    }
-    cout << "   -----------------\n\n";
-}
-int main()
-{
-    magicBitboard magic;
-    Bitboard mask = magic.generateBishopMask(E4);
-
-    magic.printBitboard(mask);
-    vector<Bitboard> occ = magic.generateOccupancyVariations(mask);
-    magic.printBitboard(occ[20]);
-    cout<<"---------------"<<endl;
-    magic.initMagicTables();
-    Bitboard blockers = 0ULL;
-    blockers |= 1ULL << D5; // example blocker
-    blockers |= 1ULL << F5;
-
-    cout << "Bishop attacks from E4 with blockers:\n";
-    printBitboard(magic.getBishopAttacks(E4, blockers));
-
-    cout << "Rook attacks from D4 with blockers:\n";
-    printBitboard(magic.getRookAttacks(D4, blockers));
-}

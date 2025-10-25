@@ -5,10 +5,11 @@
 #include "../core/PreComputedTables/PreComputed.hpp"
 #include "BitBoard.hpp"
 #include "Position.hpp"
+#include "magicBitboard.hpp"
 using namespace std;
 
-/*
-int main() {
+
+/*int main() {
     BitboardInitializer board;
     Bitboardhelper helper;
     
@@ -24,7 +25,8 @@ cout << "E4 = " << E4 << ", BLACK_PAWN = " << BLACK_PAWN << endl;
     for (const auto& pos : BitboardUtils::getAllPiecePositions(board.pieces[BLACK_PAWN])) {
         cout << pos << " ";
     }
-    cout<<"Before"<<endl;
-    
-}*/
-
+    cout<<"----------------------"<<endl;
+    magicBitboard magic;
+    magic.initMagicTables();    
+}
+*/
