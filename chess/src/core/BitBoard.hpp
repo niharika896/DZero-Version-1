@@ -103,14 +103,14 @@ class BitboardInitializer{
 };
 class Bitboardhelper {
     public:
-        static int countSetBits(Bitboard bb) {
+        static Bitboard countSetBits(Bitboard bb) {
             return static_cast<int>(__builtin_popcountll(bb));
         }
-        static int getLSBIndex(Bitboard bb) {
+        static Bitboard getLSBIndex(Bitboard bb) {
             if (bb == 0) return -1; // No bits are set
             return __builtin_ctzll(bb);
         }
-        static int getMSBIndex(Bitboard bb) {
+        static Bitboard getMSBIndex(Bitboard bb) {
             if (bb == 0) return -1; // No bits are set
             return 63 - __builtin_clzll(bb);
         }
@@ -119,11 +119,11 @@ class Bitboardhelper {
             bb &= bb - 1;            // Clear LSB
             return lsb;
         }
-        static int setBit(Bitboard &bb, int index) {
+        static Bitboard setBit(Bitboard &bb, int index) {
             bb |= (1ULL << index);
             return index;
         }
-        static int clearBit(Bitboard &bb, int index) {
+        static Bitboard clearBit(Bitboard &bb, int index) {
             bb &= ~(1ULL << index);
             return index;
         }

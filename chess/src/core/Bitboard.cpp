@@ -10,19 +10,21 @@ using namespace std;
 
 int main() {
     BitboardInitializer board;
+    Bitboardhelper helper;
     
     
-    
-    //InitAllAttackTables();
+    InitAllAttackTables();
     cout << "Hello, chess magic bitboards!\n";
 cout << "E4 = " << E4 << ", BLACK_PAWN = " << BLACK_PAWN << endl;
 
     cout<<"Pawn Attacks White from E4: ";
-    /*printBitboard(pawnAttacksWhite[E4]);
+    printBitboard(pawnAttacksWhite[E4]);
     
     cout<<"ALL Pieces Initial Position:\n";
     for (const auto& pos : BitboardUtils::getAllPiecePositions(board.pieces[BLACK_PAWN])) {
         cout << pos << " ";
-    }*/
+    }
+    cout<<"Before"<<endl;
+    
 }
 
