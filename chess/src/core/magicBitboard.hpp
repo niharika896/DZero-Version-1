@@ -17,9 +17,8 @@ struct Magic {
     int relevantBits;
     vector<Bitboard> attacks;
 };
-
-const Bitboard bishopMagics[64] = {
-    0x1002004102008200, 0x1002004102008200, 0x4310002248214800, 0x402010c110014208, 0xa000a06240114001, 0xa000a06240114001, 0x402010c110014208, 0xa000a06240114001,
+    const Bitboard bishopMagics[64] = {
+    0x1002004102008200, 0x1002004102008200, 0x4310002248214800, 0x402010c110014208, 0xfc0a66c64a7ef576, 0xa000a06240114001, 0x402010c110014208, 0xa000a06240114001,
     0x1002004102008200, 0x1002004102008200, 0x1002004102008200, 0x1002004102008200, 0x100c009840001000, 0x4310002248214800, 0xa000a06240114001, 0x4310002248214800,
     0x4310002248214800, 0x822143005020a148, 0x0001901c00420040, 0x0880504024308060, 0x0100201004200002, 0xa000a06240114001, 0x822143005020a148, 0x1002004102008200,
     0x1002004102008200, 0x1002004102008200, 0x1002004102008200, 0x2008080100820102, 0x1481010004104010, 0x0002052000100024, 0xc880221002060081, 0xc880221002060081,
@@ -50,30 +49,32 @@ Bitboard rookMagics[64] =
 0x0001000204080011, 0x0001000204000801, 0x0001000082000401, 0x0001FFFAABFAD1A2
 };
 
-Bitboard generateBishopMask(int sq)
-    {
-        int rank = sq / 8;
-        int file = sq % 8;
-        Bitboard mask = 0ULL;
-        for (int r = rank + 1, f = file + 1; r <= 6 && f <= 6; r++, f++)
-        {
-            mask |= 1ULL << (r * 8 + f);
-        }
-        for (int r = rank + 1, f = file - 1; r <= 6 && f >= 1; r++, f--)
-        {
-            mask |= 1ULL << (r * 8 + f);
-        }
-        for (int r = rank - 1, f = file + 1; r >= 1 && f <= 6; r--, f++)
-        {
-            mask |= 1ULL << (r * 8 + f);
-        }
-        for (int r = rank - 1, f = file - 1; r >= 1 && f >= 1; r--, f--)
-        {
-            mask |= 1ULL << (r * 8 + f);
-        }
-        return mask;
-    }
-Bitboard generateRookMask(int sq)
+     Bitboard generateBishopMask(int sq)
+{
+    int rank = sq / 8;
+    int file = sq % 8;
+    Bitboard mask = 0ULL;
+
+    // NE
+    for (int r = rank + 1, f = file + 1; r <= 6 && f <= 6; r++, f++)
+        mask |= 1ULL << (r * 8 + f);
+
+    // NW
+    for (int r = rank + 1, f = file - 1; r <= 6 && f >= 1; r++, f--)
+        mask |= 1ULL << (r * 8 + f);
+
+    // SE
+    for (int r = rank - 1, f = file + 1; r >= 1 && f <= 6; r--, f++)
+        mask |= 1ULL << (r * 8 + f);
+
+    // SW
+    for (int r = rank - 1, f = file - 1; r >= 1 && f >= 1; r--, f--)
+        mask |= 1ULL << (r * 8 + f);
+
+    return mask;
+}
+
+    Bitboard generateRookMask(int sq)
     {
         int rank = sq / 8;
         int file = sq % 8;
@@ -232,8 +233,9 @@ void initMagicTables() {
         bishopTable[sq].attacks.resize(1 << bishopTable[sq].relevantBits);
 
         for (auto occ : occs) {
-            int index = (occ * bishopMagics[sq]) >> (64 - bishopTable[sq].relevantBits);
-            bishopTable[sq].attacks[index] = generateBishopAttack(sq, occ);
+            occ &= bishopTable[sq].mask;
+int index = (uint64_t)(occ * bishopTable[sq].magic) >> (64 - bishopTable[sq].relevantBits);
+
         }
     }
 }
