@@ -4,7 +4,7 @@
 #include "magicBitboard.hpp"
 
 using namespace std;
-
+/*
 void printBitboard(Bitboard bb) {
     for (int r = 7; r >= 0; r--) {
         for (int f = 0; f < 8; f++) {
@@ -15,7 +15,7 @@ void printBitboard(Bitboard bb) {
     }
     cout << "\n";
 }
-/*
+
 int main() {
     magicBitboard mb;
 
