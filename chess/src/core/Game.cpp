@@ -87,7 +87,7 @@ void printMovesWithNames(const vector<pair<Piece, vector<pair<int,int>>>> &moves
             int fr  = from / 8 + 1;
             int tr  = to   / 8 + 1;
 
-            cout << "  " << ff << fr << " -> " << tf << tr << "\n";
+            cout << "  " << ff << fr << " -> " << tf << tr << " ";
         }
         cout << "\n";
     }
@@ -335,6 +335,41 @@ public:
     }
 };
 
+int squareFromStringFast(const std::string &s) {
+    if (s.size() != 2) return -1;
+
+    char file = toupper(s[0]);  // A–H
+    char rank = s[1];           // 1–8
+
+    if (file < 'A' || file > 'H') return -1;
+    if (rank < '1' || rank > '8') return -1;
+
+    int f = file - 'A';
+    int r = rank - '1';
+
+    return r * 8 + f;
+}
+Piece pieceFromFEN(char c) {
+    switch (c) {
+        case 'P': return WHITE_PAWN;
+        case 'N': return WHITE_KNIGHT;
+        case 'B': return WHITE_BISHOP;
+        case 'R': return WHITE_ROOK;
+        case 'Q': return WHITE_QUEEN;
+        case 'K': return WHITE_KING;
+
+        case 'p': return BLACK_PAWN;
+        case 'n': return BLACK_KNIGHT;
+        case 'b': return BLACK_BISHOP;
+        case 'r': return BLACK_ROOK;
+        case 'q': return BLACK_QUEEN;
+        case 'k': return BLACK_KING;
+
+        default: return NO_PIECE;
+    }
+}
+
+
 // ------------------------------------------------------
 // MAIN
 // ------------------------------------------------------
@@ -347,22 +382,33 @@ int main() {
     state.board = g.board;
     state.sideToMove = g.sideToMove;
     state.enPassantSquare = -1;
-
-    // Update combined boards to be safe
-    updateCombinedBoards(state);
-
-    // Get pseudo-legal moves
-    auto pseudo = g.getAllMovesPerPiece(state);
-    cout << "Pseudo-legal moves:\n";
-    printMovesWithNames(pseudo);
-
-    // Get legal moves (after making each move and checking king safety)
-    auto legal = g.getAllLegalMoves(state);
-    cout << "Legal moves (after legalization):\n";
-    printMovesWithNames(legal);
-
-    // Example: print whether sideToMove's king would be in check after each legal move
-    Color mover = state.sideToMove;
-    Color opp = (mover == WHITE) ? BLACK : WHITE;
+    char piece;
+    string from1,to1;
+    while(from1!="-1"&&to1!="-1"){
+        printBoardWithPieces(state);
+        cout<<"pseudo legal moves:\n";
+        auto pseudo=g.getAllMovesPerPiece(state);
+        printMovesWithNames(pseudo);
+        cout<<"legal moves:\n";
+        auto legal=g.getAllLegalMoves(state);
+        printMovesWithNames(legal);
+        cout<<"Enter from and to squares (or -1 to quit): ";
+        cin>>piece>>from1>>to1;
+        int from=squareFromStringFast(from1);
+        int to=squareFromStringFast(to1);
+        int found=0;
+        for(auto entry:legal){
+            for(auto mv:entry.second){
+                if(from==mv.first&&to==mv.second){
+                    found=1;
+                }
+            }
+        }
+        if(!found) continue;
+        
+        g.makeMove(state,from,to,pieceFromFEN(piece),state.sideToMove);
+        state.sideToMove=(state.sideToMove==WHITE)?BLACK:WHITE;
+        updateCombinedBoards(state);
+    }
     return 0;
 }
