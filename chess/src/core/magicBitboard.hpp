@@ -243,6 +243,7 @@ int index = (uint64_t)(occ * bishopTable[sq].magic) >> (64 - bishopTable[sq].rel
 inline Bitboard getBishopAttacks(int sq, Bitboard occ) {
     occ &= bishopTable[sq].mask;
     int index = (occ * bishopTable[sq].magic) >> (64 - bishopTable[sq].relevantBits);
+    bishopTable[sq].attacks[index] = generateBishopAttack(sq, occ); 
     return bishopTable[sq].attacks[index];
 }
 
