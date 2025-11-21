@@ -17,7 +17,8 @@ struct Magic {
     int relevantBits;
     vector<Bitboard> attacks;
 };
-    const Bitboard bishopMagics[64] = {
+
+const Bitboard bishopMagics[64] = {
     0x1002004102008200, 0x1002004102008200, 0x4310002248214800, 0x402010c110014208, 0xa000a06240114001, 0xa000a06240114001, 0x402010c110014208, 0xa000a06240114001,
     0x1002004102008200, 0x1002004102008200, 0x1002004102008200, 0x1002004102008200, 0x100c009840001000, 0x4310002248214800, 0xa000a06240114001, 0x4310002248214800,
     0x4310002248214800, 0x822143005020a148, 0x0001901c00420040, 0x0880504024308060, 0x0100201004200002, 0xa000a06240114001, 0x822143005020a148, 0x1002004102008200,
@@ -27,17 +28,7 @@ struct Magic {
     0x402010c110014208, 0xa000a06240114001, 0xa000a06240114001, 0x1002004102008200, 0x1002004102008200, 0x1002004102008200, 0x1002004102008200, 0x1002004102008200,
     0xa000a06240114001, 0x4310002248214800, 0x1002004102008200, 0x1002004102008200, 0x1002004102008200, 0x1002004102008200, 0x1002004102008200, 0x1002004102008200
 };
-/*
-const Bitboard rookMagics[64] = {
-    0x8200108041020020, 0x8200108041020020, 0xc880221002060081, 0x0009100804021000, 0x0500010004107800, 0x0024010008800a00, 0x0400110410804810, 0x8300038100004222,
-    0x004a800182c00020, 0x0009100804021000, 0x3002200010c40021, 0x0020100104000208, 0x01021001a0080020, 0x0884020010082100, 0x1000820800c00060, 0x8020480110020020,
-    0x0002052000100024, 0x0200190040088100, 0x0030802001a00800, 0x8010002004000202, 0x0040010100080010, 0x2200608200100080, 0x0001901c00420040, 0x0001400a24008010,
-    0x1400a22008001042, 0x8200108041020020, 0x2004500023002400, 0x8105100028001048, 0x8010024d00014802, 0x8000820028030004, 0x402010c110014208, 0x8300038100004222,
-    0x0001804002800124, 0x0084022014041400, 0x0030802001a00800, 0x0110a01001080008, 0x0b10080850081100, 0x000010040049020c, 0x0024010008800a00, 0x014c800040100426,
-    0x1100400010208000, 0x0009100804021000, 0x0010024871202002, 0x8014001028c80801, 0x1201082010a00200, 0x0002008004102009, 0x8300038100004222, 0x0000401001a00408,
-    0x4520920010210200, 0x0400110410804810, 0x8105100028001048, 0x8105100028001048, 0x0802801009083002, 0x8200108041020020, 0x8200108041020020, 0x4000a12400848110,
-    0x2000804026001102, 0x2000804026001102, 0x800040a010040901, 0x80001802002c0422, 0x0010b018200c0122, 0x200204802a080401, 0x8880604201100844, 0x80000cc281092402
-};*/
+
 Bitboard rookMagics[64] = 
 {
 0x0080001020400080, 0x0040001000200040, 0x0080081000200080, 0x0080040800100080,
@@ -59,7 +50,7 @@ Bitboard rookMagics[64] =
 0x0001000204080011, 0x0001000204000801, 0x0001000082000401, 0x0001FFFAABFAD1A2
 };
 
-    Bitboard generateBishopMask(int sq)
+Bitboard generateBishopMask(int sq)
     {
         int rank = sq / 8;
         int file = sq % 8;
@@ -82,7 +73,7 @@ Bitboard rookMagics[64] =
         }
         return mask;
     }
-    Bitboard generateRookMask(int sq)
+Bitboard generateRookMask(int sq)
     {
         int rank = sq / 8;
         int file = sq % 8;
@@ -97,9 +88,11 @@ Bitboard rookMagics[64] =
             mask |= 1ULL << (rank * 8 + f);
         return mask;
     }
-    vector<Bitboard> generateOccupancyVariations(Bitboard mask)
+//If the rook mask for a square has n squares inside it, then there are: 2^n possible ways to place blockers on those n squares.Each configuration is called an occupancy variation. Magic bitboards require all of them to build the attack lookup table.
+
+vector<Bitboard> generateOccupancyVariations(Bitboard mask)
     {
-        vector<int> relevantSquares;
+        vector<int> relevantSquares;  //array of all squares that are common with the generated mask
         for (int sq = 0; sq < 64; sq++)
         {
             if (mask & (1ULL << sq))
@@ -107,23 +100,24 @@ Bitboard rookMagics[64] =
                 relevantSquares.push_back(sq);
             }
         }
-        int numBits = relevantSquares.size();
-        int numVariation = 1 << numBits;
-        vector<Bitboard> occupancies(numVariation, 0ULL);
+        int numBits = relevantSquares.size(); //if numBits=3 say then num variations=8 = binary 000->111 => 3 bits are needed
+        int numVariation = 1 << numBits; // 1 << numBits = 2^n which is the total number of possible blocker configurations
+        vector<Bitboard> occupancies(numVariation, 0ULL); //array of bitboards of that length
 
-        for (int i = 0; i < numVariation; i++)
+        for (int i = 0; i < numVariation; i++) //for each variation
         {
-            Bitboard occ = 0ULL;
-            for (int j = 0; j < numBits; j++)
+            Bitboard occ = 0ULL; 
+            for (int j = 0; j < numBits; j++)  //for each bit in that variation
             {
-                if (i & (1 << j))
-                    occ |= 1ULL << relevantSquares[j];
+                if (i & (1 << j)) 
+                    occ |= 1ULL << relevantSquares[j]; //If bit j of i is 1 → place a blocker at relevantSquares[j]
             }
             occupancies[i] = occ;
         }
         return occupancies;
     }
-    Bitboard generateBishopAttack(int sq, Bitboard blockers)
+    
+Bitboard generateBishopAttack(int sq, Bitboard blockers)
     {
         int rank = sq / 8;
         int file = sq % 8;
@@ -167,7 +161,8 @@ Bitboard rookMagics[64] =
 
         return attacks;
     }
-    Bitboard generateRookAttack(int sq, Bitboard blockers)
+    
+Bitboard generateRookAttack(int sq, Bitboard blockers)
     {
         int rank = sq / 8;
         int file = sq % 8;
@@ -211,7 +206,8 @@ Bitboard rookMagics[64] =
 
         return attacks;
     }
-    array<Magic, 64> bishopTable;
+    
+array<Magic, 64> bishopTable;
 array<Magic, 64> rookTable;
 
 void initMagicTables() {
@@ -241,6 +237,7 @@ void initMagicTables() {
         }
     }
 }
+
 inline Bitboard getBishopAttacks(int sq, Bitboard occ) {
     occ &= bishopTable[sq].mask;
     int index = (occ * bishopTable[sq].magic) >> (64 - bishopTable[sq].relevantBits);

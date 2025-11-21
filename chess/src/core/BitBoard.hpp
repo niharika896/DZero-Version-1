@@ -13,17 +13,17 @@ using Bitboard = uint64_t;
 // Enumeration for chess pieces for clarity 13-is for null piece
 enum Piece {
     // Individual white pieces
-    WHITE_PAWN, WHITE_KNIGHT, WHITE_BISHOP, WHITE_ROOK, WHITE_QUEEN, WHITE_KING,
+    WHITE_PAWN, WHITE_KNIGHT, WHITE_BISHOP, WHITE_ROOK, WHITE_QUEEN, WHITE_KING, //0-5
     // Individual black pieces
-    BLACK_PAWN, BLACK_KNIGHT, BLACK_BISHOP, BLACK_ROOK, BLACK_QUEEN, BLACK_KING,
+    BLACK_PAWN, BLACK_KNIGHT, BLACK_BISHOP, BLACK_ROOK, BLACK_QUEEN, BLACK_KING, //6-11
     // Aggregates
-    WHITE_PIECES,   // all white pieces
+    WHITE_PIECES,   // all white pieces 
     BLACK_PIECES,   // all black pieces
     ALL_PIECES,     // all pieces on board
     NO_PIECE        // optional placeholder
 };
 
-
+//square mask is a bitboard where only one bit is 1
 
 class BitboardInitializer{
     public:
@@ -60,7 +60,8 @@ class BitboardInitializer{
         pieces[BLACK_PIECES] = 0;
 
         for (int i = WHITE_PAWN; i <= WHITE_KING; ++i)
-            pieces[WHITE_PIECES] |= pieces[i];
+        //pieces[white_pieces] = pieces[white_pawn] + pieces[white_knight]+......
+            pieces[WHITE_PIECES] |= pieces[i]; 
 
         for (int i = BLACK_PAWN; i <= BLACK_KING; ++i)
             pieces[BLACK_PIECES] |= pieces[i];
@@ -69,7 +70,7 @@ class BitboardInitializer{
         pieces[ALL_PIECES] = pieces[WHITE_PIECES] | pieces[BLACK_PIECES];
     }
         void printBitboard(Bitboard bb) {
-    bitset<64> b(bb);
+    bitset<64> b(bb); //converting bitboard to 64bit binary sequence
     for (int rank = 7; rank >= 0; --rank) {    // rank 8 to rank 1
         for (int file = 0; file < 8; ++file) { // file A to H
             int sq = rank * 8 + file;          // calculate square index
@@ -79,14 +80,15 @@ class BitboardInitializer{
     }
     cout << "\n";
 }
-
+//Square is the enum mapping 0->A1, 1->A2 ...so on
+//Piece is the enum of the pieces
         void movePiece(Piece p,Square src,Square dst){
             Bitboard srcMask=squareMasks[src];
             Bitboard dstMask=squareMasks[dst];
             //clearing piece from src
             pieces[p]&=~srcMask;
 
-            //clearinf the dst peice from all bitboards to maintain consistency
+            //clearing the dst piece from all bitboards to maintain consistency and also handles capture
             for (int i = WHITE_PAWN; i <= BLACK_KING; ++i) {
                 pieces[i] &= ~dstMask;
             }
@@ -105,16 +107,16 @@ class BitboardInitializer{
 };
 class Bitboardhelper {
     public:
-        static Bitboard countSetBits(Bitboard bb) {
+        static Bitboard countSetBits(Bitboard bb) { //count no of 1s
             return static_cast<int>(__builtin_popcountll(bb));
         }
         static Bitboard getLSBIndex(Bitboard bb) {
             if (bb == 0) return -1; // No bits are set
-            return __builtin_ctzll(bb);
+            return __builtin_ctzll(bb); //ctz=count trailing zeroes -> index of lowest set bit.
         }
         static Bitboard getMSBIndex(Bitboard bb) {
             if (bb == 0) return -1; // No bits are set
-            return 63 - __builtin_clzll(bb);
+            return 63 - __builtin_clzll(bb); //clz=count leading zeroes -> index of highest set bit
         }
         static Bitboard popLSB(Bitboard &bb) {
             Bitboard lsb = bb & -bb; // Isolate LSB
