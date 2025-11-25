@@ -519,6 +519,113 @@ public:
         return legal;
     }
 };
+int evaluateBoard(Game &g, GameState &state, bool isMaximisingPlayer) {
+    auto legal = g.getAllLegalMoves(state);
+    int totalMoves = 0;
+    for (auto &e : legal) totalMoves += e.second.size();
+    bool inCheck = g.isInCheck(state, state.sideToMove);
+
+    // compute maximizing player's color from parameters
+    Color maxColor = isMaximisingPlayer ? state.sideToMove
+                                        : (state.sideToMove == WHITE ? BLACK : WHITE);
+
+    if (totalMoves == 0) {
+        if (inCheck) {
+            Color winner = (state.sideToMove == WHITE) ? BLACK : WHITE;
+            return (winner == maxColor) ? 100000000 : -100000000;
+        }
+        return 0; // stalemate
+    }
+    Color botColor    = isMaximisingPlayer ? state.sideToMove : (state.sideToMove==WHITE?BLACK:WHITE);
+    Color enemyColor  = (botColor == WHITE ? BLACK : WHITE);
+
+    auto count = [&](Piece p) {
+        return __builtin_popcountll(state.board.pieces[p]);
+    };
+
+    int botMaterial =
+          count(botColor==WHITE ? WHITE_QUEEN  : BLACK_QUEEN ) * 900
+        + count(botColor==WHITE ? WHITE_ROOK   : BLACK_ROOK  ) * 500
+        + count(botColor==WHITE ? WHITE_BISHOP : BLACK_BISHOP) * 330
+        + count(botColor==WHITE ? WHITE_KNIGHT : BLACK_KNIGHT) * 320
+        + count(botColor==WHITE ? WHITE_PAWN   : BLACK_PAWN  ) * 100;
+
+    int enemyMaterial =
+          count(enemyColor==WHITE ? WHITE_QUEEN  : BLACK_QUEEN ) * 900
+        + count(enemyColor==WHITE ? WHITE_ROOK   : BLACK_ROOK  ) * 500
+        + count(enemyColor==WHITE ? WHITE_BISHOP : BLACK_BISHOP) * 330
+        + count(enemyColor==WHITE ? WHITE_KNIGHT : BLACK_KNIGHT) * 320
+        + count(enemyColor==WHITE ? WHITE_PAWN   : BLACK_PAWN  ) * 100;
+
+    return botMaterial - enemyMaterial;
+    
+}
+
+int minimax(Game &g, GameState &state, int depth,int alpha,int beta, bool isMaximisingPlayer) {
+    if (depth == 0)
+        return evaluateBoard(g, state, isMaximisingPlayer);
+
+    auto legal = g.getAllLegalMoves(state);
+
+    int totalMoves = 0;
+    for (auto &e : legal) totalMoves += e.second.size();
+    if (totalMoves == 0)
+        return evaluateBoard(g, state, isMaximisingPlayer);
+
+    if (isMaximisingPlayer) {
+        int bestEval = -100000000;
+
+        for (auto &entry : legal) {
+            for (auto &mv : entry.second) {
+
+                GameState backup = state;        // SAVE
+                g.makeMove(state, mv);           // APPLY MOVE
+                updateCombinedBoards(state);
+
+                state.sideToMove = (state.sideToMove==WHITE?BLACK:WHITE);
+
+                int eval = minimax(g, state, depth - 1,alpha,beta, false);
+                alpha = max(alpha,eval);
+                state = backup;                  // RESTORE
+
+                bestEval = max(bestEval, eval);
+                if (beta <= alpha) {
+                    break;
+                }
+            }
+        }
+
+        return bestEval;
+    }
+
+    else {
+        int bestEval = 100000000;
+
+        for (auto &entry : legal) {
+            for (auto &mv : entry.second) {
+
+                GameState backup = state; 
+
+                g.makeMove(state, mv);
+                updateCombinedBoards(state);
+
+                state.sideToMove = (state.sideToMove==WHITE?BLACK:WHITE);
+
+                int eval = minimax(g, state, depth - 1,alpha,beta, true);
+
+                state = backup;
+
+                bestEval = min(bestEval, eval);
+                beta = min(beta,eval);
+                if (beta <= alpha) {
+                    break;
+                }
+            }
+        }
+
+        return bestEval;
+    }
+}
 
 // ------------------------------------------------------
 // MAIN
@@ -537,86 +644,142 @@ int main() {
     cout << "Enter moves as: FROM TO (e.g. E2 E4). For promotions, after entering FROM TO, you'll be prompted to choose Q/R/B/N.\n";
     cout << "Enter -1 to quit.\n\n";
 
+    
     while (true) {
-        printBoardWithPieces(state);
 
-        auto pseudo = g.getAllMovesPerPiece(state);
-        
-        auto legal = g.getAllLegalMoves(state);
-        cout << "Legal moves (counts by piece):\n";
+    printBoardWithPieces(state);
+    cout << endl;
+
+    // ---------------------------
+    // CHECKMATE / STALEMATE
+    // ---------------------------
+    auto legal = g.getAllLegalMoves(state);
+    int total = 0;
+    for (auto &e : legal) total += e.second.size();
+
+    if (total == 0) {
+        bool inCheck = g.isInCheck(state, state.sideToMove);
+        if (inCheck)
+            cout << ((state.sideToMove==WHITE) ? "White" : "Black") << " is checkmated!\n";
+        else
+            cout << "Stalemate!\n";
+        break;
+    }
+
+    // ---------------------------
+    // HUMAN MOVE (WHITE)
+    // ---------------------------
+    if (state.sideToMove == WHITE) {
         printMovesWithNames(legal);
 
-        // Check for checkmate/stalemate
-        int totalLegal = 0;
-        for (auto &e : legal) totalLegal += (int)e.second.size();
-        bool inCheck = g.isInCheck(state, state.sideToMove);
-        if (totalLegal == 0) {
-            if (inCheck) {
-                cout << ((state.sideToMove==WHITE) ? "White" : "Black") << " is checkmated. Game over.\n";
-            } else {
-                cout << "Stalemate. Game over.\n";
-            }
-            break;
-        }
-
-        cout << "Enter from and to squares (or -1 to quit): "<<endl;
         string fromS, toS;
-        if (!(cin >> fromS)) break;
-        if (fromS == "-1") break;
-        if (!(cin >> toS)) break;
+        cout << "Enter from and to (e.g. E2 E4): ";
+        cin >> fromS >> toS;
 
         int from = squareFromStringFast(fromS);
         int to   = squareFromStringFast(toS);
         if (from == -1 || to == -1) {
-            cout << "Invalid squares. Try again.\n";
+            cout << "Invalid square.\n";
             continue;
         }
 
-        // Find candidate legal moves matching from->to
+        // gather matching moves
         vector<Move> candidates;
-        for (auto &entry : legal) {
-            for (auto &mv : entry.second) {
-                if (mv.from == from && mv.to == to) candidates.push_back(mv);
-            }
-        }
+        for (auto &entry : legal)
+            for (auto &mv : entry.second)
+                if (mv.from == from && mv.to == to)
+                    candidates.push_back(mv);
+
         if (candidates.empty()) {
-            cout << "No legal move found for that from->to. Try again.\n";
+            cout << "Illegal move.\n";
             continue;
         }
 
-        // If any candidate is a promotion (or multiple), ask user to pick promotion piece
+        // handle promotion
         Move chosen = candidates[0];
-        bool needsPromotion = false;
-        for (auto &c : candidates) {
-            if (c.promotion != NO_PIECE) { needsPromotion = true; break; }
-        }
-        if (needsPromotion) {
-            cout << "This move is a promotion. Choose piece (Q/R/B/N): ";
-            char pc; cin >> pc;
-            Piece promoPiece = promotionCharToPiece(pc, state.sideToMove);
-            // find candidate with that promotion
+        bool promotionNeeded = false;
+        for (auto &c : candidates)
+            if (c.promotion != NO_PIECE)
+                promotionNeeded = true;
+
+        if (promotionNeeded) {
+            cout << "Promote to (Q/R/B/N): ";
+            char pc;
+            cin >> pc;
+            Piece desired = promotionCharToPiece(pc, WHITE);
+
             bool found = false;
-            for (auto &c : candidates) {
-                if (c.promotion == promoPiece) { chosen = c; found = true; break; }
-            }
-            if (!found) {
-                // default to queen if user choice not available
+            for (auto &c : candidates)
+                if (c.promotion == desired) {
+                    chosen = c;
+                    found = true;
+                    break;
+                }
+
+            if (!found) { // default to queen
                 for (auto &c : candidates) {
-                    if (c.promotion == (state.sideToMove==WHITE?WHITE_QUEEN:BLACK_QUEEN)) { chosen = c; break; }
+                    if (c.promotion == WHITE_QUEEN)
+                        chosen = c;
                 }
             }
-        } else {
-            // no promotion: if multiple identical moves (shouldn't happen), pick first
-            chosen = candidates[0];
         }
 
-        // Apply chosen move
+        // play HUMAN move
         g.makeMove(state, chosen);
-
-        // flip side and update combined boards
-        state.sideToMove = (state.sideToMove == WHITE ? BLACK : WHITE);
         updateCombinedBoards(state);
+        state.sideToMove = BLACK;
+        continue;
     }
+
+    // ---------------------------------------------------------
+    // BOT MOVE (BLACK)
+    // ---------------------------------------------------------
+    cout << "\nBot thinking...\n";
+
+    int bestEval = 100000000;
+    Move bestMove;
+    bool moveSet = false;
+
+    auto botLegal = g.getAllLegalMoves(state);
+
+    // iterate all black moves
+    for (auto &entry : botLegal) {
+        for (auto &mv : entry.second) {
+
+            GameState backup = state;
+
+            // bot plays mv
+            g.makeMove(state, mv);
+            updateCombinedBoards(state);
+            state.sideToMove = WHITE;
+
+            int eval = minimax(g, state, 4,-100000000,100000000, true);  // depth 2 or higher
+
+            state = backup;
+
+            if (!moveSet || eval < bestEval) {
+                bestEval = eval;
+                bestMove = mv;
+                moveSet = true;
+            }
+        }
+    }
+
+    
+    // If promotion, print it
+    if (bestMove.promotion != NO_PIECE) {
+        cout << " promoting to " 
+             << ((bestMove.promotion==BLACK_QUEEN)?"Q":
+                 (bestMove.promotion==BLACK_ROOK)?"R":
+                 (bestMove.promotion==BLACK_BISHOP)?"B":"N");
+    }
+    cout << endl;
+
+    // apply bot move
+    g.makeMove(state, bestMove);
+    updateCombinedBoards(state);
+    state.sideToMove = WHITE;
+}
 
     cout << "Exiting.\n";
     return 0;
