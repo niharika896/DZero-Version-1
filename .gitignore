@@ -15,6 +15,7 @@ MemoryCaptures/
 *.unityproj
 *.sln
 *.apk
+*.exe
 *.aab
 *.xcodeproj
 *.xcworkspace

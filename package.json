@@ -4,8 +4,10 @@
     "axios": "^1.13.2",
     "child_process": "^1.0.2",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "nodemon": "^3.1.11",
+    "path": "^0.12.7",
     "tailwindcss": "^4.1.17"
   }
 }

@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: dzero-backend
+    env: node
+    buildCommand: |
+      cd ../src
+      make
+    startCommand: |
+      node server.js
+    envVars:
+      - key: ENGINE_PATH
+        value: ../src/chess

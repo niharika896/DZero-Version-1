@@ -1,8 +1,8 @@
 import { spawn } from "child_process";
-
+import path from "path";
 class CppEngine {
     constructor() {
-        this.process = spawn("../src/chess.exe");
+        this.process = spawn(path.join(__dirname, "../src/chess"));
         this.callbacks = [];
         this.buffer = "";
         this.pendingLines = [];
