@@ -3,10 +3,10 @@ services:
     name: dzero-backend
     env: node
     buildCommand: |
-      cd ../src
+      cd src
       make
     startCommand: |
-      node server.js
+      node backend/server.js
     envVars:
       - key: ENGINE_PATH
-        value: ../src/chess
+        value: src/chess
