@@ -69,7 +69,7 @@ export default function App() {
 
     async function makeBotMove(playerFrom: string, playerTo: string) {
         try {
-            const res = await fetch('http://localhost:3000/botresponse', {
+            const res = await fetch('https://dzero-version-1-server.onrender.com/botresponse', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -179,11 +179,11 @@ export default function App() {
     }
 
         const chessboardOptions = {
-      allowDragging: false,
-      onSquareClick,
-      position: chessPosition,
-      squareStyles: optionSquares,
-      id: 'click-to-move'
+        allowDragging: false,
+        onSquareClick,
+        position: chessPosition,
+        squareStyles: optionSquares,
+        id: 'click-to-move'
     };
 
     return (
