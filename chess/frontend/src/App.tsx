@@ -188,22 +188,32 @@ export default function App() {
 
     return (
     <div className="max-h-screen w-[50%]">
+
+        <Chessboard options={chessboardOptions} />
+
         {gameStatus && (
-            <div style={{
-                padding: '10px',
-                marginBottom: '10px',
-                textAlign: 'center',
-                fontSize: '20px',
-                fontWeight: 'bold',
-                backgroundColor: gameStatus.includes('Checkmate') ? '#ffcccc' : 
-                                gameStatus.includes('Check') ? '#ffffcc' : '#ccccff',
-                border: '2px solid #333',
-                borderRadius: '5px'
-            }}>
+            <div
+                className={`
+                    absolute left-10 -translate-x-9 bottom-5
+                    px-5 py-3 rounded-xl border backdrop-blur-md
+                    text-lg font-semibold text-center animate-toast
+                    shadow-lg
+                    ${gameStatus.includes('Checkmate')
+                        ? 'bg-red-900/70 text-yellow-200 border-red-300'
+                        : gameStatus.includes('Check')
+                        ? 'bg-yellow-700/70 text-black border-yellow-300'
+                        : 'bg-slate-800/70 text-white border-slate-500'}
+                `}
+                style={{
+                    minWidth: "200px"
+                }}
+            >
                 {gameStatus}
             </div>
         )}
-        <Chessboard options={chessboardOptions} />
     </div>
 );
+
+
+
 }

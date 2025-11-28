@@ -15,8 +15,8 @@ router.post("/", async (req, res) => {
 
         res.json({ 
             success: true, 
-            botMove: output.move,  // e.g., "E7 E5"
-            fen: output.fen        // Updated FEN after bot move
+            botMove: output.move, 
+            fen: output.fen    
         });
 
     } catch (err) {
