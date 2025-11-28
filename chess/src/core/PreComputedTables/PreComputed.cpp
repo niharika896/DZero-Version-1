@@ -20,6 +20,17 @@ string squareToString(Square sq) {
     return s;
 }
 
+string squareToStringINT(int sq) {
+    int file = sq % 8;    // 0 = A, ..., 7 = H
+    int rank = sq / 8;    // 0 = rank 1, ..., 7 = rank 8
+
+    string s;
+    s += char('A' + file);
+    s += char('1' + rank);
+    return s;
+}
+
+
 void printBitboard(Bitboard bb) {
     for (int rank = 7; rank >= 0; --rank) {
         cout << rank + 1 << " ";

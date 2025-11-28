@@ -34,4 +34,5 @@ void InitAllAttackTables();
 
 // Utility
 std::string squareToString(Square sq);
+std::string squareToStringINT(int sq);
 void printBitboard(Bitboard bb);
