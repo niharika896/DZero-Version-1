@@ -192,6 +192,94 @@ public:
         InitMagicOnce();
     }
 
+    // Add this to your Game class
+string getFEN(const GameState& state) {
+    string fen = "";
+    
+    // 1. PIECE PLACEMENT (board part)
+    for (int rank = 7; rank >= 0; rank--) {  // Start from rank 8 (index 7)
+        int emptyCount = 0;
+        
+        for (int file = 0; file < 8; file++) {
+            int sq = rank * 8 + file;
+            Piece piece = getPieceAt(state, sq);
+            
+            if (piece == NO_PIECE) {
+                emptyCount++;
+            } else {
+                // If we had empty squares, add the count first
+                if (emptyCount > 0) {
+                    fen += to_string(emptyCount);
+                    emptyCount = 0;
+                }
+                
+                // Add piece character
+                char pieceChar = pieceToChar(piece);
+                fen += pieceChar;
+            }
+        }
+        
+        // Add remaining empty squares for this rank
+        if (emptyCount > 0) {
+            fen += to_string(emptyCount);
+        }
+        
+        // Add rank separator (except after last rank)
+        if (rank > 0) {
+            fen += '/';
+        }
+    }
+    
+    // 2. SIDE TO MOVE
+    fen += ' ';
+    fen += (state.sideToMove == WHITE) ? 'w' : 'b';
+    
+    // 3. CASTLING RIGHTS
+    fen += ' ';
+    string castling = "";
+    if (state.WhiteCanCastleKingSide) castling += 'K';
+    if (state.WhiteCanCastleQueenSide) castling += 'Q';
+    if (state.BlackCanCastleKingSide) castling += 'k';
+    if (state.BlackCanCastleQueenSide) castling += 'q';
+    if (castling.empty()) castling = "-";
+    fen += castling;
+    
+    // 4. EN PASSANT TARGET SQUARE
+    fen += ' ';
+    if (state.enPassantSquare == -1) {
+        fen += '-';
+    } else {
+        fen += squareToStringINT(state.enPassantSquare);
+    }
+    
+    // 5. HALFMOVE CLOCK (for 50-move rule, defaulting to 0)
+    fen += " 0";
+    
+    // 6. FULLMOVE NUMBER (defaulting to 1)
+    fen += " 1";
+    
+    return fen;
+}
+
+// Helper function to convert Piece enum to FEN character
+char pieceToChar(Piece p) {
+    switch(p) {
+        case WHITE_PAWN:   return 'P';
+        case WHITE_KNIGHT: return 'N';
+        case WHITE_BISHOP: return 'B';
+        case WHITE_ROOK:   return 'R';
+        case WHITE_QUEEN:  return 'Q';
+        case WHITE_KING:   return 'K';
+        case BLACK_PAWN:   return 'p';
+        case BLACK_KNIGHT: return 'n';
+        case BLACK_BISHOP: return 'b';
+        case BLACK_ROOK:   return 'r';
+        case BLACK_QUEEN:  return 'q';
+        case BLACK_KING:   return 'k';
+        default: return '?';
+    }
+}
+
     void loadFEN(const string &fen) {
         string boardPart = fen.substr(0, fen.find(' '));
         string turnPart  = fen.substr(fen.find(' ') + 1, 1);
@@ -631,156 +719,124 @@ int minimax(Game &g, GameState &state, int depth,int alpha,int beta, bool isMaxi
 // MAIN
 // ------------------------------------------------------
 int main() {
-    Game g;
-    g.loadFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w");
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
 
-    // Build initial state wrapper
-    GameState state;
-    state.board = g.board;
-    state.sideToMove = g.sideToMove;
-    state.enPassantSquare = -1;
-    updateCombinedBoards(state);
+    cerr << "C++ ENGINE STARTED" << endl;
 
-    cout << "Enter moves as: FROM TO (e.g. E2 E4). For promotions, after entering FROM TO, you'll be prompted to choose Q/R/B/N.\n";
-    cout << "Enter -1 to quit.\n\n";
-
-    
     while (true) {
-
-    printBoardWithPieces(state);
-    cout << endl;
-
-    // ---------------------------
-    // CHECKMATE / STALEMATE
-    // ---------------------------
-    auto legal = g.getAllLegalMoves(state);
-    int total = 0;
-    for (auto &e : legal) total += e.second.size();
-
-    if (total == 0) {
-        bool inCheck = g.isInCheck(state, state.sideToMove);
-        if (inCheck)
-            cout << ((state.sideToMove==WHITE) ? "White" : "Black") << " is checkmated!\n";
-        else
-            cout << "Stalemate!\n";
-        break;
-    }
-
-    // ---------------------------
-    // HUMAN MOVE (WHITE)
-    // ---------------------------
-    if (state.sideToMove == WHITE) {
-        printMovesWithNames(legal);
-
+        string fen;
         string fromS, toS;
-        cout << "Enter from and to (e.g. E2 E4): ";
-        cin >> fromS >> toS;
 
-        int from = squareFromStringFast(fromS);
-        int to   = squareFromStringFast(toS);
-        if (from == -1 || to == -1) {
-            cout << "Invalid square.\n";
-            continue;
+        cerr << "WAITING FOR INPUT..." << endl;
+        
+        // READ INPUT
+        if (!getline(cin, fen)) {
+            cerr << "FEN read failed, exiting" << endl;
+            break;
         }
-
-        // gather matching moves
-        vector<Move> candidates;
-        for (auto &entry : legal)
-            for (auto &mv : entry.second)
-                if (mv.from == from && mv.to == to)
-                    candidates.push_back(mv);
-
-        if (candidates.empty()) {
-            cout << "Illegal move.\n";
-            continue;
+        cerr << "GOT FEN: " << fen << endl;
+        
+        if (!(cin >> fromS >> toS)) {
+            cerr << "MOVE read failed, exiting" << endl;
+            break;
         }
+        cin.ignore();  // Clear newline
+        cerr << "GOT MOVE: " << fromS << " " << toS << endl;
 
-        // handle promotion
-        Move chosen = candidates[0];
-        bool promotionNeeded = false;
-        for (auto &c : candidates)
-            if (c.promotion != NO_PIECE)
-                promotionNeeded = true;
+        // INIT GAME
+        Game g;
+        g.loadFEN(fen);
 
-        if (promotionNeeded) {
-            cout << "Promote to (Q/R/B/N): ";
-            char pc;
-            cin >> pc;
-            Piece desired = promotionCharToPiece(pc, WHITE);
+        GameState state;
+        state.board = g.board;
+        state.sideToMove = g.sideToMove;
+        state.enPassantSquare = -1;
+        
+        state.WhiteCanCastleKingSide = 1;
+        state.WhiteCanCastleQueenSide = 1;
+        state.BlackCanCastleKingSide = 1;
+        state.BlackCanCastleQueenSide = 1;
 
-            bool found = false;
-            for (auto &c : candidates)
-                if (c.promotion == desired) {
-                    chosen = c;
-                    found = true;
-                    break;
-                }
-
-            if (!found) { // default to queen
-                for (auto &c : candidates) {
-                    if (c.promotion == WHITE_QUEEN)
-                        chosen = c;
-                }
-            }
-        }
-
-        // play HUMAN move
-        g.makeMove(state, chosen);
         updateCombinedBoards(state);
-        state.sideToMove = BLACK;
-        continue;
-    }
 
-    // ---------------------------------------------------------
-    // BOT MOVE (BLACK)
-    // ---------------------------------------------------------
-    cout << "\nBot thinking...\n";
+        // APPLY HUMAN MOVE
+        if (fromS != "NONE" && toS != "NONE") {
+            int from = squareFromStringFast(fromS);
+            int to   = squareFromStringFast(toS);
 
-    int bestEval = 100000000;
-    Move bestMove;
-    bool moveSet = false;
+            auto legal = g.getAllLegalMoves(state);
+            vector<Move> candidates;
 
-    auto botLegal = g.getAllLegalMoves(state);
+            for (auto &entry : legal)
+                for (auto &mv : entry.second)
+                    if (mv.from == from && mv.to == to)
+                        candidates.push_back(mv);
 
-    // iterate all black moves
-    for (auto &entry : botLegal) {
-        for (auto &mv : entry.second) {
-
-            GameState backup = state;
-
-            // bot plays mv
-            g.makeMove(state, mv);
-            updateCombinedBoards(state);
-            state.sideToMove = WHITE;
-
-            int eval = minimax(g, state, 4,-100000000,100000000, true);  // depth 2 or higher
-
-            state = backup;
-
-            if (!moveSet || eval < bestEval) {
-                bestEval = eval;
-                bestMove = mv;
-                moveSet = true;
+            if (!candidates.empty()) {
+                g.makeMove(state, candidates[0]);
+                updateCombinedBoards(state);
+                state.sideToMove = BLACK;
             }
         }
+
+        // BOT MOVE
+        auto botLegal = g.getAllLegalMoves(state);
+
+        int bestEval = 100000000;
+        Move bestMove;
+        bool moveSet = false;
+
+        for (auto &entry : botLegal) {
+            for (auto &mv : entry.second) {
+                GameState backup = state;
+
+                g.makeMove(state, mv);
+                updateCombinedBoards(state);
+                state.sideToMove = WHITE;
+
+                int eval = minimax(g, state, 2, -100000000, 100000000, true);
+
+                state = backup;
+
+                if (!moveSet || eval < bestEval) {
+                    bestEval = eval;
+                    bestMove = mv;
+                    moveSet = true;
+                }
+            }
+        }
+
+        // MAKE BOT MOVE
+        g.makeMove(state, bestMove);
+        updateCombinedBoards(state);
+        state.sideToMove = WHITE;
+
+        // OUTPUT BOTH MOVE AND FEN
+        string outFrom = squareToStringINT(bestMove.from);
+        string outTo   = squareToStringINT(bestMove.to);
+
+        // Line 1: MOVE
+        cout << outFrom << " " << outTo;
+        if (bestMove.promotion != NO_PIECE) {
+            char promo = '?';
+            if (bestMove.promotion == BLACK_QUEEN)  promo = 'Q';
+            if (bestMove.promotion == BLACK_ROOK)   promo = 'R';
+            if (bestMove.promotion == BLACK_BISHOP) promo = 'B';
+            if (bestMove.promotion == BLACK_KNIGHT) promo = 'N';
+            cout << " " << promo;
+        }
+        cout << endl;
+        cout.flush();  // IMPORTANT: Flush after move
+
+        // Line 2: FEN
+        string resultFEN = g.getFEN(state);
+        cout << resultFEN << endl;
+        cout.flush();  // IMPORTANT: Flush after FEN
+        
+        cerr << "OUTPUT COMPLETE, looping back..." << endl;
     }
 
-    
-    // If promotion, print it
-    if (bestMove.promotion != NO_PIECE) {
-        cout << " promoting to " 
-             << ((bestMove.promotion==BLACK_QUEEN)?"Q":
-                 (bestMove.promotion==BLACK_ROOK)?"R":
-                 (bestMove.promotion==BLACK_BISHOP)?"B":"N");
-    }
-    cout << endl;
-
-    // apply bot move
-    g.makeMove(state, bestMove);
-    updateCombinedBoards(state);
-    state.sideToMove = WHITE;
-}
-
-    cout << "Exiting.\n";
+    cerr << "C++ ENGINE EXITING" << endl;
     return 0;
 }
