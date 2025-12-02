@@ -20,24 +20,14 @@ class CppEngine {
                 const line = raw.trim();
                 if (!line) continue;
 
-                console.log("CPP OUT:", line);
-
                 let parsed = null;
-
-                // Try parsing JSON
                 try {
                     parsed = JSON.parse(line);
-                } catch (e) {
-                    console.error("NOT JSON:", line);
-                    continue;
+                } catch {
+                    continue; // Ignore non-JSON lines silently
                 }
 
-                if (!parsed.move || !parsed.fen) {
-                    console.error("Invalid engine JSON:", parsed);
-                    continue;
-                }
-
-                if (this.callbacks.length > 0) {
+                if (parsed && this.callbacks.length > 0) {
                     const cb = this.callbacks.shift();
                     cb(parsed);
                 }
@@ -45,10 +35,10 @@ class CppEngine {
         });
 
         // -----------------------------------------
-        // HANDLE ERRORS
+        // MINIMAL ERROR HANDLING
         // -----------------------------------------
         this.process.stderr.on("data", (data) => {
-            console.error("CPP ERROR:", data.toString());
+            console.error("[ENGINE STDERR]", data.toString());
         });
 
         this.process.on("close", (code) => {
@@ -61,30 +51,17 @@ class CppEngine {
     }
 
     // -----------------------------------------
-    // SEND BOT REQUEST
+    // SEND BOT REQUEST (NO TIMEOUT)
     // -----------------------------------------
     sendBotRequest(fen, from = "NONE", to = "NONE") {
-        return new Promise((resolve, reject) => {
-            // 30-second timeout
-            const timeout = setTimeout(() => {
-                console.error("ENGINE TIMEOUT");
-                reject(new Error("Engine timeout"));
-            }, 30000);
+        return new Promise((resolve) => {
+            this.callbacks.push(resolve);
 
-            // Push callback
-            this.callbacks.push((result) => {
-                clearTimeout(timeout);
-                resolve(result);
-            });
-
-            // Send data to engine
             this.process.stdin.write(fen + "\n");
             this.process.stdin.write(from + " " + to + "\n");
-
         });
     }
 }
 
-// Export singleton instance
 const engine = new CppEngine();
 export default engine;
