@@ -3,7 +3,7 @@ import { spawn } from "child_process";
 class CppEngine {
     constructor() {
 
-        this.process = spawn("../src/chess.exe");
+        this.process = spawn("../src/chess");
         this.callbacks = [];
         this.buffer = "";
 
