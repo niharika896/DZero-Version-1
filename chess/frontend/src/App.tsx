@@ -5,7 +5,10 @@ import type { SquareHandlerArgs } from "react-chessboard";
 import type { Square } from "chess.js";
 
 export default function App() {
-    const chessGameRef = useRef(new Chess());
+    const START_FEN = "rnbk2nr/6pp/3p4/1q6/4PQ2/2P2N2/PB3PPP/RN3RK1 w - - 0 1";  
+
+const chessGameRef = useRef(new Chess());
+
     const chessGame = chessGameRef.current;
 
     const [chessPosition, setChessPosition] = useState(chessGame.fen());
@@ -68,94 +71,111 @@ export default function App() {
     }
 
     async function makeBotMove(playerFrom: string, playerTo: string) {
-        try {
-            const res = await fetch('https://dzero-version-1-server.onrender.com/botresponse', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    fen: chessGame.fen(),
-                    from: playerFrom,
-                    to: playerTo
-                })
-            });
+    try {
+        const res = await fetch('https://dzero-version-1-server.onrender.com/botresponse', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                fen: chessGame.fen(),
+                from: playerFrom,
+                to: playerTo
+            })
+        });
 
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-            const data = await res.json();
-            
-            if (!data?.botMove) {
-                setTurn('w');
-                return;
-            }
+        const data = await res.json();
 
-            const moveParts = data.botMove.split(" ");
-            const botFrom = moveParts[0].toLowerCase();
-            const botTo = moveParts[1].toLowerCase();
-            const promotion = moveParts[2]?.toLowerCase() || 'q';
-
-            const moveResult = chessGame.move({
-                from: botFrom,
-                to: botTo,
-                promotion: promotion
-            });
-
-            if (moveResult) {
-                playSound({ 
-                    captured: moveResult.captured !== undefined,
-                    flags: moveResult.flags 
-                });
-            }
-
-            setChessPosition(chessGame.fen());
+        if (!data?.botMove) {
+            console.warn("⚠️ Bot returned no move");
             setTurn('w');
-
-        } catch (err) {
-            console.error("Bot move failed", err);
-            setTurn('w');
-        }
-    }
-
-    function onSquareClick({square, piece}: SquareHandlerArgs) {
-        if (turn !== 'w') return;
-
-        if (!moveFrom && piece) {
-            const hasMoveOptions = getMoveOptions(square as Square);
-            if (hasMoveOptions) setMoveFrom(square);
             return;
         }
 
-        const moves = chessGame.moves({ square: moveFrom as Square, verbose: true });
-        const foundMove = moves.find(m => m.from === moveFrom && m.to === square);
+        // ---- NEW: JSON move parsing ----
+        // botMove = "e7e5" or "e7e8q"
+        const moveStr = data.botMove.trim().toLowerCase();
 
-        if (!foundMove) {
-            const hasMoveOptions = getMoveOptions(square as Square);
-            setMoveFrom(hasMoveOptions ? square : '');
-            return;
-        }
+        const botFrom = moveStr.slice(0, 2);   // e7
+        const botTo = moveStr.slice(2, 4);     // e5
+        const promotion = moveStr[4] || undefined;
 
-        let moveResult;
-        try {
-            moveResult = chessGame.move({ from: moveFrom, to: square, promotion: 'q' });
-        } catch {
-            const hasMoveOptions = getMoveOptions(square as Square);
-            if (hasMoveOptions) setMoveFrom(square);
-            return;
-        }
+        const moveResult = chessGame.move({
+            from: botFrom,
+            to: botTo,
+            promotion: promotion
+        });
 
         if (moveResult) {
-            playSound({ 
+            playSound({
                 captured: moveResult.captured !== undefined,
-                flags: moveResult.flags 
+                flags: moveResult.flags
             });
         }
 
-        setChessPosition(chessGame.fen());
-        setMoveFrom('');
-        setOptionSquares({});
-
-        setTurn('b');
-        makeBotMove(moveFrom, square);
+        // ---- NEW: Set engine FEN to ensure sync ----
+        try {
+    if (data.fen) {
+        chessGame.load(data.fen);   // try engine FEN
     }
+} catch (e) {
+    console.warn("⚠️ Engine returned invalid FEN, ignoring engine FEN:", data.fen);
+    // Just rely on chess.js internal board instead
+}
+
+
+        setChessPosition(chessGame.fen());
+        setTurn('w');
+
+    } catch (err) {
+        console.error("❌ Bot move failed", err);
+        setTurn('w');
+    }
+}
+
+    function onSquareClick({ square, piece }: SquareHandlerArgs) {
+    if (turn !== 'w') return;
+
+    if (!moveFrom && piece) {
+        const hasMoves = getMoveOptions(square as Square);
+        if (hasMoves) setMoveFrom(square);
+        return;
+    }
+
+    const moves = chessGame.moves({ square: moveFrom as Square, verbose: true });
+    const foundMove = moves.find((m) => m.from === moveFrom && m.to === square);
+
+    // Not a valid move → select new piece or clear selection
+    if (!foundMove) {
+        const canSelect = getMoveOptions(square as Square);
+        setMoveFrom(canSelect ? square : '');
+        return;
+    }
+
+    let moveResult;
+    try {
+        moveResult = chessGame.move({ from: moveFrom, to: square, promotion: 'q' });
+    } catch {
+        const canSelect = getMoveOptions(square as Square);
+        setMoveFrom(canSelect ? square : '');
+        return;
+    }
+
+    if (moveResult) {
+        playSound({
+            captured: moveResult.captured !== undefined,
+            flags: moveResult.flags
+        });
+    }
+
+    setChessPosition(chessGame.fen());
+    setMoveFrom('');
+    setOptionSquares({});
+
+    setTurn('b');
+    makeBotMove(moveFrom, square);
+}
+
 
     function getMoveOptions(square: Square) {
         const moves = chessGame.moves({ square, verbose: true });
@@ -179,11 +199,11 @@ export default function App() {
     }
 
         const chessboardOptions = {
-        allowDragging: false,
-        onSquareClick,
-        position: chessPosition,
-        squareStyles: optionSquares,
-        id: 'click-to-move'
+      allowDragging: false,
+      onSquareClick,
+      position: chessPosition,
+      squareStyles: optionSquares,
+      id: 'click-to-move'
     };
 
     return (

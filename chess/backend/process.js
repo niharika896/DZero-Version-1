@@ -1,77 +1,90 @@
 import { spawn } from "child_process";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 class CppEngine {
     constructor() {
-        this.process = spawn(path.join(__dirname, "../src/core/chess"));
+
+        this.process = spawn("../src/chess.exe");
         this.callbacks = [];
         this.buffer = "";
-        this.pendingLines = [];
 
+        // -----------------------------------------
+        // READ STDOUT (JSON per line)
+        // -----------------------------------------
         this.process.stdout.on("data", (data) => {
             this.buffer += data.toString();
-            
-            let lines = this.buffer.split("\n");
-            this.buffer = lines.pop() || "";
-            
-            for (const line of lines) {
-                const text = line.trim();
-                if (text) {
-                    console.log("CPP OUT:", text);
-                    this.pendingLines.push(text);
-                    
-                    // We expect 2 lines: MOVE then FEN
-                    if (this.pendingLines.length >= 2 && this.callbacks.length > 0) {
-                        const cb = this.callbacks.shift();
-                        const response = {
-                            move: this.pendingLines[0],
-                            fen: this.pendingLines[1]
-                        };
-                        this.pendingLines = [];
-                        cb(response);
-                    }
+
+            const lines = this.buffer.split("\n");
+            this.buffer = lines.pop();
+
+            for (let raw of lines) {
+                const line = raw.trim();
+                if (!line) continue;
+
+                console.log("CPP OUT:", line);
+
+                let parsed = null;
+
+                // Try parsing JSON
+                try {
+                    parsed = JSON.parse(line);
+                } catch (e) {
+                    console.error("NOT JSON:", line);
+                    continue;
+                }
+
+                if (!parsed.move || !parsed.fen) {
+                    console.error("Invalid engine JSON:", parsed);
+                    continue;
+                }
+
+                if (this.callbacks.length > 0) {
+                    const cb = this.callbacks.shift();
+                    cb(parsed);
                 }
             }
         });
 
+        // -----------------------------------------
+        // HANDLE ERRORS
+        // -----------------------------------------
         this.process.stderr.on("data", (data) => {
             console.error("CPP ERROR:", data.toString());
         });
 
         this.process.on("close", (code) => {
-            console.error("CPP process exited with code", code);
+            console.error("C++ engine exited with code", code);
         });
 
         this.process.on("error", (err) => {
-            console.error("CPP process error:", err);
+            console.error("C++ engine failed:", err);
         });
     }
 
+    // -----------------------------------------
+    // SEND BOT REQUEST
+    // -----------------------------------------
     sendBotRequest(fen, from = "NONE", to = "NONE") {
         return new Promise((resolve, reject) => {
+            // 30-second timeout
             const timeout = setTimeout(() => {
-                console.error("Timeout! Pending lines:", this.pendingLines);
-                this.pendingLines = [];
-                reject(new Error("C++ engine timeout"));
-            }, 30000);  // 30 seconds
+                console.error("ENGINE TIMEOUT");
+                reject(new Error("Engine timeout"));
+            }, 30000);
 
+            // Push callback
             this.callbacks.push((result) => {
                 clearTimeout(timeout);
                 resolve(result);
             });
 
-            console.log("Sending to C++:", fen);
-            console.log("Sending to C++:", from, to);
-            
+            // Send data to engine
             this.process.stdin.write(fen + "\n");
             this.process.stdin.write(from + " " + to + "\n");
+
         });
     }
 }
 
+// Export singleton instance
 const engine = new CppEngine();
 export default engine;

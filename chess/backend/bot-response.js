@@ -5,23 +5,44 @@ const router = express.Router();
 
 router.post("/", async (req, res) => {
     try {
-        const { fen, from, to } = req.body;
+        const { fen, from = "NONE", to = "NONE" } = req.body;
 
-        if (!fen) {
-            return res.status(400).json({ success: false, error: "FEN is required" });
+
+        if (!fen || typeof fen !== "string") {
+            return res.status(400).json({
+                success: false,
+                error: "Invalid or missing FEN"
+            });
         }
 
-        const output = await engine.sendBotRequest(fen, from, to);
+        // -----------------------
+        // CALL ENGINE
+        // -----------------------
+        const result = await engine.sendBotRequest(fen, from, to);
 
-        res.json({ 
-            success: true, 
-            botMove: output.move, 
-            fen: output.fen    
+        if (!result || !result.move || !result.fen) {
+            console.error("Invalid engine result:", result);
+            return res.status(500).json({
+                success: false,
+                error: "Engine returned invalid response"
+            });
+        }
+        // -----------------------
+        // SEND SUCCESS RESPONSE
+        // -----------------------
+        return res.json({
+            success: true,
+            botMove: result.move,   // "e2e4" or "e7e8q"
+            fen: result.fen
         });
 
     } catch (err) {
         console.error("Bot response error:", err);
-        res.status(500).json({ success: false, error: err.message });
+
+        return res.status(500).json({
+            success: false,
+            error: err.message || "Engine error"
+        });
     }
 });
 

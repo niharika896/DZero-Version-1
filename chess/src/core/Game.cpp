@@ -6,6 +6,7 @@
 #include <cstring>
 #include <cctype>
 #include <optional>
+#include <bits/stdc++.h>
 
 #include "../core/PreComputedTables/PreComputed.hpp"
 #include "BitBoard.hpp"
@@ -137,8 +138,7 @@ void printMovesWithNames(const vector<pair<Piece, vector<Move>>> &moves)
             cout << "  " << ff << fr << " -> " << tf << tr;
             if (mv.promotion != NO_PIECE)
             {
-                char pc = (mv.promotion == WHITE_QUEEN || mv.promotion == BLACK_QUEEN) ? 'Q' : (mv.promotion == WHITE_ROOK || mv.promotion == BLACK_ROOK)   ? 'R'
-                                                                                           : (mv.promotion == WHITE_BISHOP || mv.promotion == BLACK_BISHOP) ? 'B'
+                char pc = (mv.promotion == WHITE_QUEEN || mv.promotion == BLACK_QUEEN) ? 'Q' : (mv.promotion == WHITE_ROOK || mv.promotion == BLACK_ROOK)   ? 'R' : (mv.promotion == WHITE_BISHOP || mv.promotion == BLACK_BISHOP) ? 'B'
                                                                                                                                                             : 'N';
                 cout << " (promote to " << pc << ")";
             }
@@ -476,9 +476,7 @@ public:
         }
 
         // ---------------- Knight ----------------
-        Bitboard knights = (attacker == WHITE)
-                               ? s.board.pieces[WHITE_KNIGHT]
-                               : s.board.pieces[BLACK_KNIGHT];
+        Bitboard knights = (attacker == WHITE)? s.board.pieces[WHITE_KNIGHT] : s.board.pieces[BLACK_KNIGHT];
 
         Bitboard nn = knights;
         while (nn)
@@ -490,9 +488,7 @@ public:
         }
 
         // ---------------- King ----------------
-        Bitboard kings = (attacker == WHITE)
-                             ? s.board.pieces[WHITE_KING]
-                             : s.board.pieces[BLACK_KING];
+        Bitboard kings = (attacker == WHITE) ? s.board.pieces[WHITE_KING]: s.board.pieces[BLACK_KING];
 
         Bitboard kk = kings;
         while (kk)
@@ -504,9 +500,7 @@ public:
         }
 
         // ---------------- Bishop / Queen ----------------
-        Bitboard bishops = (attacker == WHITE)
-                               ? (s.board.pieces[WHITE_BISHOP] | s.board.pieces[WHITE_QUEEN])
-                               : (s.board.pieces[BLACK_BISHOP] | s.board.pieces[BLACK_QUEEN]);
+        Bitboard bishops = (attacker == WHITE)? (s.board.pieces[WHITE_BISHOP] | s.board.pieces[WHITE_QUEEN]): (s.board.pieces[BLACK_BISHOP] | s.board.pieces[BLACK_QUEEN]);
 
         Bitboard bb = bishops;
         while (bb)
@@ -518,9 +512,7 @@ public:
         }
 
         // ---------------- Rook / Queen ----------------
-        Bitboard rooks = (attacker == WHITE)
-                             ? (s.board.pieces[WHITE_ROOK] | s.board.pieces[WHITE_QUEEN])
-                             : (s.board.pieces[BLACK_ROOK] | s.board.pieces[BLACK_QUEEN]);
+        Bitboard rooks = (attacker == WHITE)? (s.board.pieces[WHITE_ROOK] | s.board.pieces[WHITE_QUEEN]): (s.board.pieces[BLACK_ROOK] | s.board.pieces[BLACK_QUEEN]);
 
         Bitboard rr = rooks;
         while (rr)
@@ -690,14 +682,14 @@ public:
             {
                 int fromRank = from / 8;
                 int toRank = to / 8;
-                if (fromRank == 1 && toRank == 3)
+                if (fromRank == 1 && toRank == 3&&(s.board.pieces[BLACK_PAWN] & ((1ULL << (to - 1)) | (1ULL << (to + 1)))))
                     s.enPassantSquare = from + 8;
             }
             else if (mover == BLACK_PAWN)
             {
                 int fromRank = from / 8;
                 int toRank = to / 8;
-                if (fromRank == 6 && toRank == 4)
+                if (fromRank == 6 && toRank == 4&&(s.board.pieces[WHITE_PAWN] & ((1ULL << (to - 1)) | (1ULL << (to + 1)))))
                     s.enPassantSquare = from - 8;
             }
         }
@@ -715,13 +707,9 @@ public:
     {
         vector<pair<Piece, vector<Move>>> result;
 
-        Bitboard ourPieces = (state.sideToMove == WHITE)
-                                 ? state.board.pieces[WHITE_PIECES]
-                                 : state.board.pieces[BLACK_PIECES];
+        Bitboard ourPieces = (state.sideToMove == WHITE) ? state.board.pieces[WHITE_PIECES]: state.board.pieces[BLACK_PIECES];
 
-        Bitboard oppPieces = (state.sideToMove == WHITE)
-                                 ? state.board.pieces[BLACK_PIECES]
-                                 : state.board.pieces[WHITE_PIECES];
+        Bitboard oppPieces = (state.sideToMove == WHITE)? state.board.pieces[BLACK_PIECES]: state.board.pieces[WHITE_PIECES];
 
         Bitboard occupancy = state.board.pieces[ALL_PIECES];
 
@@ -888,40 +876,95 @@ public:
 
 int evaluateBoard(Game &g, GameState &state, bool isMaximisingPlayer)
 {
+    // 1. Checkmate / Stalemate
     auto legal = g.getAllLegalMoves(state);
-    int totalMoves = 0;
+    int moveCount = 0;
     for (auto &e : legal)
-        totalMoves += e.second.size();
+        moveCount += e.second.size();
+
     bool inCheck = g.isInCheck(state, state.sideToMove);
 
-    // compute maximizing player's color from parameters
-    Color maxColor = isMaximisingPlayer ? state.sideToMove
-                                        : (state.sideToMove == WHITE ? BLACK : WHITE);
+    
+    Color maxColor = isMaximisingPlayer ? state.sideToMove : (state.sideToMove == WHITE ? BLACK : WHITE);
 
-    if (totalMoves == 0)
+    if (moveCount == 0)
     {
         if (inCheck)
         {
-            Color winner = (state.sideToMove == WHITE) ? BLACK : WHITE;
-            return (winner == maxColor) ? 100000000 : -100000000;
-        }
-        return 0; // stalemate
-    }
-    Color botColor = isMaximisingPlayer ? state.sideToMove : (state.sideToMove == WHITE ? BLACK : WHITE);
-    Color enemyColor = (botColor == WHITE ? BLACK : WHITE);
+            // Checkmate — side to move loses
+            Color winner = (state.sideToMove == WHITE ? BLACK : WHITE);
 
+            // Stronger scoring: mate sooner is better
+            int score = 100000000;  // base
+            if (winner != maxColor) score = -score;
+            return score;
+        }
+        else
+        {
+            // Stalemate
+            return -50;  // slightly bad for both
+        }
+    }
+    // 2. Material Evaluation
     auto count = [&](Piece p)
     {
         return __builtin_popcountll(state.board.pieces[p]);
     };
 
-    int botMaterial =
-        count(botColor == WHITE ? WHITE_QUEEN : BLACK_QUEEN) * 900 + count(botColor == WHITE ? WHITE_ROOK : BLACK_ROOK) * 500 + count(botColor == WHITE ? WHITE_BISHOP : BLACK_BISHOP) * 330 + count(botColor == WHITE ? WHITE_KNIGHT : BLACK_KNIGHT) * 320 + count(botColor == WHITE ? WHITE_PAWN : BLACK_PAWN) * 100;
+    auto materialOf = [&](Color c)
+    {
+        return
+            count(c == WHITE ? WHITE_QUEEN  : BLACK_QUEEN)  * 900 +
+            count(c == WHITE ? WHITE_ROOK   : BLACK_ROOK)   * 500 +
+            count(c == WHITE ? WHITE_BISHOP : BLACK_BISHOP) * 330 +
+            count(c == WHITE ? WHITE_KNIGHT : BLACK_KNIGHT) * 320 +
+            count(c == WHITE ? WHITE_PAWN   : BLACK_PAWN)   * 100;
+    };
 
-    int enemyMaterial =
-        count(enemyColor == WHITE ? WHITE_QUEEN : BLACK_QUEEN) * 900 + count(enemyColor == WHITE ? WHITE_ROOK : BLACK_ROOK) * 500 + count(enemyColor == WHITE ? WHITE_BISHOP : BLACK_BISHOP) * 330 + count(enemyColor == WHITE ? WHITE_KNIGHT : BLACK_KNIGHT) * 320 + count(enemyColor == WHITE ? WHITE_PAWN : BLACK_PAWN) * 100;
+    int whiteMaterial = materialOf(WHITE);
+    int blackMaterial = materialOf(BLACK);
 
-    return botMaterial - enemyMaterial;
+    int materialScore = (maxColor == WHITE)
+                        ? whiteMaterial - blackMaterial
+                        : blackMaterial - whiteMaterial;
+
+    
+    static const int pawnTable[64] = {
+        0,  5,  5, -5, -5,  5,  5,  0,
+        0, 10, 10,  0,  0, 10, 10,  0,
+        0, 10, 20, 20, 20, 20, 10,  0,
+        5, 10, 15, 25, 25, 15, 10,  5,
+        5,  5, 10, 20, 20, 10,  5,  5,
+        0,  5,  5,  5,  5,  5,  5,  0,
+        0,  0,  0, -5, -5,  0,  0,  0,
+        0,  0,  0,  0,  0,  0,  0,  0
+    };
+
+    auto pstScore = [&](Color c)
+    {
+        int score = 0;
+        uint64_t pawns = state.board.pieces[c == WHITE ? WHITE_PAWN : BLACK_PAWN];
+
+        while (pawns)
+        {
+            int sq = __builtin_ctzll(pawns);
+            pawns &= pawns - 1;
+
+            // mirror for black
+            int tableIndex = (c == WHITE) ? sq : (63 - sq);
+            score += pawnTable[tableIndex];
+        }
+        return score;
+    };
+
+    int pst = (maxColor == WHITE)
+            ? pstScore(WHITE) - pstScore(BLACK)
+            : pstScore(BLACK) - pstScore(WHITE);
+
+
+    // 4. Return final evaluation
+
+    return materialScore + pst;
 }
 
 
@@ -1109,150 +1152,139 @@ void enforceCastlingLegality(Game &g, GameState &s)
 // ------------------------------------------------------
 // MAIN
 // ------------------------------------------------------
-int main()
-{
+
+int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    cerr << "C++ ENGINE STARTED" << endl;
+    cerr << "[ENGINE] STARTED\n";
 
-    while (true)
-    {
+    while (true) {
         string fen;
         string fromS, toS;
 
-        cerr << "WAITING FOR INPUT..." << endl;
-
+        // ------------------------------
         // READ INPUT
-        if (!getline(cin, fen))
-        {
-            cerr << "FEN read failed, exiting" << endl;
+        // ------------------------------
+        if (!getline(cin, fen)) {
+            cerr << "[ENGINE] FEN READ FAILED\n";
             break;
         }
-        cerr << "GOT FEN: " << fen << endl;
+        cerr << "[ENGINE] GOT FEN: " << fen << "\n";
 
-        if (!(cin >> fromS >> toS))
-        {
-            cerr << "MOVE read failed, exiting" << endl;
+        if (!(cin >> fromS >> toS)) {
+            cerr << "[ENGINE] MOVE READ FAILED\n";
             break;
         }
-        cin.ignore(); // Clear newline
-        cerr << "GOT MOVE: " << fromS << " " << toS << endl;
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
+        cerr << "[ENGINE] GOT MOVE: " << fromS << " " << toS << "\n";
+
+        // ------------------------------
         // INIT GAME
+        // ------------------------------
         Game g;
         auto fenData = g.parseFEN(fen, g.fenHelper);
 
         GameState state;
         state.board = fenData.board;
         state.sideToMove = fenData.sideToMove;
-        // Castling from FEN
-        
 
-        // En-passant from FEN
+        // En-passant
         if (fenData.enpassant == "-")
-        {
             state.enPassantSquare = -1;
-        }
         else
-        {
             state.enPassantSquare = squareFromStringFast(fenData.enpassant);
-        }
 
         updateCombinedBoards(state);
 
-        // APPLY HUMAN MOVE
-        if (fromS != "NONE" && toS != "NONE")
-        {
+        // ------------------------------
+        // APPLY HUMAN MOVE IF GIVEN
+        // ------------------------------
+        if (fromS != "NONE" && toS != "NONE") {
             int from = squareFromStringFast(fromS);
             int to = squareFromStringFast(toS);
 
             auto legal = g.getAllLegalMoves(state);
-            vector<Move> candidates;
+            bool applied = false;
 
             for (auto &entry : legal)
                 for (auto &mv : entry.second)
-                    if (mv.from == from && mv.to == to)
-                        candidates.push_back(mv);
+                    if (mv.from == from && mv.to == to) {
+                        g.makeMove(state, mv);
+                        applied = true;
+                        break;
+                    }
 
-            if (!candidates.empty())
-            {
-                g.makeMove(state, candidates[0]);
+            if (applied) {
                 updateCombinedBoards(state);
                 state.sideToMove = BLACK;
             }
         }
 
+        // ------------------------------
         // BOT MOVE
+        // ------------------------------
         auto botLegal = g.getAllLegalMoves(state);
 
-        int bestEval = 100000000;
+        int bestEval = INT_MAX;
         Move bestMove;
-        bool moveSet = false;
+        bool found = false;
 
-        for (auto &entry : botLegal)
-        {
-            for (auto &mv : entry.second)
-            {
+        for (auto &entry : botLegal) {
+            for (auto &mv : entry.second) {
                 GameState backup = state;
 
                 g.makeMove(state, mv);
-                parseCastlingRights(fenData.castling, state);
-
                 updateCombinedBoards(state);
                 state.sideToMove = WHITE;
-                int eval ;
-                
-                     eval = minimax(g, state, 3, -100000000, 100000000, true);
-               
-                
+
+                int eval = minimax(g, state, 2, -100000000, 100000000, true);
 
                 state = backup;
 
-                if (!moveSet || eval < bestEval)
-                {
+                if (!found || eval < bestEval) {
                     bestEval = eval;
                     bestMove = mv;
-                    moveSet = true;
+                    found = true;
                 }
             }
         }
 
-        // MAKE BOT MOVE
+        // Apply bot move
         g.makeMove(state, bestMove);
         updateCombinedBoards(state);
         state.sideToMove = WHITE;
 
-        // OUTPUT BOTH MOVE AND FEN
+        // Build JSON response
         string outFrom = squareToStringINT(bestMove.from);
         string outTo = squareToStringINT(bestMove.to);
 
-        // Line 1: MOVE
-        cout << outFrom << " " << outTo;
-        if (bestMove.promotion != NO_PIECE)
-        {
-            char promo = '?';
-            if (bestMove.promotion == BLACK_QUEEN)
-                promo = 'Q';
-            if (bestMove.promotion == BLACK_ROOK)
-                promo = 'R';
-            if (bestMove.promotion == BLACK_BISHOP)
-                promo = 'B';
-            if (bestMove.promotion == BLACK_KNIGHT)
-                promo = 'N';
-            cout << " " << promo;
+        char promoChar = 0;
+        if (bestMove.promotion != NO_PIECE) {
+            if (bestMove.promotion == BLACK_QUEEN) promoChar = 'q';
+            if (bestMove.promotion == BLACK_ROOK) promoChar = 'r';
+            if (bestMove.promotion == BLACK_BISHOP) promoChar = 'b';
+            if (bestMove.promotion == BLACK_KNIGHT) promoChar = 'n';
         }
-        cout << endl;
-        cout.flush(); // IMPORTANT: Flush after move
 
-        // Line 2: FEN
         string resultFEN = g.getFEN(state);
-        cout << resultFEN << endl;
-        cout.flush(); // IMPORTANT: Flush after FEN
 
-        cerr << "OUTPUT COMPLETE, looping back..." << endl;
+        // ------------------------------
+        // FINAL JSON OUTPUT (single line)
+        // ------------------------------
+        cout << "{"
+            << "\"move\":\"" << outFrom << outTo;
+        if (promoChar) cout << promoChar;
+        cout << "\","
+            << "\"fen\":\"" << resultFEN << "\""
+            << "}"
+            << "\n";
+
+        cout.flush();
+        cerr << "[ENGINE] RESPONSE SENT\n";
     }
 
-    cerr << "C++ ENGINE EXITING" << endl;
+    cerr << "[ENGINE] EXITING\n";
     return 0;
 }
