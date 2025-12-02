@@ -7,7 +7,6 @@ const __dirname = path.dirname(__filename);
 class CppEngine {
     constructor() {
         this.process = spawn(path.join(__dirname, "../src/core/chess"));
-        this.process = spawn("../src/chess");
         this.callbacks = [];
         this.buffer = "";
 
