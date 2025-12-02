@@ -5,7 +5,6 @@ import type { SquareHandlerArgs } from "react-chessboard";
 import type { Square } from "chess.js";
 
 export default function App() {
-    const START_FEN = "rnbk2nr/6pp/3p4/1q6/4PQ2/2P2N2/PB3PPP/RN3RK1 w - - 0 1";  
 
 const chessGameRef = useRef(new Chess());
 
